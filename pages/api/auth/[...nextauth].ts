@@ -17,7 +17,16 @@ export const authOptions = {
       },
       async authorize(credentials) {
         await connectDB();
-        if (credentials.role) { // Signup flow
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error('Email and password are required');
+        }
+
+        // Signup flow: Create new user if role is provided
+        if (credentials.role) {
+          const existingUser = await User.findOne({ email: credentials.email });
+          if (existingUser) {
+            throw new Error('User already exists. Please sign in instead.');
+          }
           const hashedPassword = await bcrypt.hash(credentials.password, 10);
           const user = new User({
             email: credentials.email,
@@ -27,11 +36,13 @@ export const authOptions = {
           await user.save();
           return { id: user._id, email: user.email, role: user.role };
         }
+
+        // Sign-in flow: Verify existing user
         const user = await User.findOne({ email: credentials.email });
         if (user && (await bcrypt.compare(credentials.password, user.password))) {
           return { id: user._id, email: user.email, role: user.role };
         }
-        return null;
+        throw new Error('Invalid email or password');
       },
     }),
   ],
@@ -49,6 +60,10 @@ export const authOptions = {
       session.user.role = token.role;
       return session;
     },
+  },
+  pages: {
+    signIn: '/signup', // Redirect to /signup for both flows
+    error: '/signup',  // Redirect errors back to /signup
   },
 };
 

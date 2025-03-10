@@ -11,17 +11,37 @@ export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ title: '', description: '', group: '', projectId: '', assignedTo: '' });
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (status === 'authenticated') {
+      // Fetch projects
       fetch('/api/projects')
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+          }
+          return res.json();
+        })
         .then((data) => setProjects(data))
-        .catch((err) => console.error('Fetch projects error:', err));
+        .catch((err) => {
+          console.error('Fetch projects error:', err);
+          setError('Failed to load projects');
+        });
+
+      // Fetch tasks
       fetch('/api/tasks')
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+          }
+          return res.json();
+        })
         .then((data) => setTasks(data))
-        .catch((err) => console.error('Fetch tasks error:', err));
+        .catch((err) => {
+          console.error('Fetch tasks error:', err);
+          setError((prev) => prev || 'Failed to load tasks');
+        });
     }
   }, [status]);
 
@@ -55,6 +75,7 @@ export default function Dashboard() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6 text-foreground">Dashboard</h1>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {projects.map((project) => (
           <Card key={project._id}>
