@@ -23,16 +23,16 @@ export default function Signup() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="w-full"
+          className="w-full text-gray-500"
         />
         <Input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          className="w-full"
+          className="w-full text-gray-500"
         />
-        <Select value={role} onValueChange={setRole}>
+        <Select value={role} onValueChange={setRole} className="w-full text-gray-500">
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select a role" />
           </SelectTrigger>
