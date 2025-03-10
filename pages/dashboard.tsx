@@ -7,17 +7,26 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Dashboard() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ title: '', description: '', group: '', projectId: '', assignedTo: '' });
 
   useEffect(() => {
-    if (session) {
-      fetch('/api/projects').then((res) => res.json()).then(setProjects);
-      fetch('/api/tasks').then((res) => res.json()).then(setTasks);
+    if (status === 'authenticated') {
+      fetch('/api/projects')
+        .then((res) => res.json())
+        .then((data) => setProjects(data))
+        .catch((err) => console.error('Fetch projects error:', err));
+      fetch('/api/tasks')
+        .then((res) => res.json())
+        .then((data) => setTasks(data))
+        .catch((err) => console.error('Fetch tasks error:', err));
     }
-  }, [session]);
+  }, [status]);
+
+  if (status === 'loading') return <div>Loading...</div>;
+  if (status === 'unauthenticated') return <div>Please sign in</div>;
 
   const handleCreateTask = async () => {
     if (session?.user.role !== 'tester') return;
@@ -45,9 +54,7 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-
-      {/* Project List */}
+      <h1 className="text-3xl font-bold mb-6 text-foreground">Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {projects.map((project) => (
           <Card key={project._id}>
@@ -55,13 +62,11 @@ export default function Dashboard() {
               <CardTitle>{project.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>Public Link: <a href={`/project/${project.publicLink}`} className="text-blue-500">{project.publicLink}</a></p>
+              <p>Public Link: <a href={`/project/${project.publicLink}`} className="text-primary">{project.publicLink}</a></p>
             </CardContent>
           </Card>
         ))}
       </div>
-
-      {/* Task Creation (Tester Only) */}
       {session?.user.role === 'tester' && (
         <Dialog>
           <DialogTrigger asChild>
@@ -107,10 +112,8 @@ export default function Dashboard() {
           </DialogContent>
         </Dialog>
       )}
-
-      {/* Task List */}
       <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">Tasks</h2>
+        <h2 className="text-2xl font-semibold mb-4 text-foreground">Tasks</h2>
         <div className="space-y-4">
           {tasks.map((task) => (
             <Card key={task._id}>
