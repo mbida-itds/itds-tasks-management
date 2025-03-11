@@ -7,6 +7,7 @@ export default async function handler(req, res) {
   try {
     await connectDB();
     if (req.method === 'GET') {
+      //'Jetbarains Mono','Cascadia Code','Dank Mono','Fira Code','SF Mono','Operator Mono Lig','Source Code Pro',Consolas, OpenSans,Poppins,'Courier New', monospace
       const session = await getServerSession(req, res, authOptions);
       console.log('Session for /api/tasks:', session); // Debug session
       const query = session ? { assignedTo: session.user.id } : {};
