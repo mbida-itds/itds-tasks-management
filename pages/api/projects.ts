@@ -1,31 +1,49 @@
-import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/db';
 import Project from '@/models/Project';
-import { authOptions } from './auth/[...nextauth]';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'; // Use a secure secret in production
 
 export default async function handler(req, res) {
   try {
     await connectDB();
+    
+    // Extract token from Authorization header
+    const token = req.headers.authorization?.split(' ')[1];
+
     if (req.method === 'GET') {
-      const session = await getServerSession(req, res, authOptions);
-      const projects = await Project.find(session ? { createdBy: session.user.id } : {});
-      console.log('Projects fetched:', projects); // Debug log
-      return res.status(200).json(projects);
-    }
-    if (req.method === 'POST') {
-      const session = await getServerSession(req, res, authOptions);
-      if (!session || session.user.role !== 'admin') {
+      if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
+      
+      // Verify token
+      const decoded = jwt.verify(token, JWT_SECRET);
+      const projects = await Project.find({ createdBy: decoded.id }); // Use the user ID from the token
+      return res.status(200).json(projects);
+    }
+
+    if (req.method === 'POST') {
+      if (!token) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      
+      // Verify token
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded.role !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+      
       const { name } = req.body;
       if (!name) {
         return res.status(400).json({ message: 'Project name is required' });
       }
+      
       const publicLink = `${name.toLowerCase().replace(/\s/g, '-')}-${Date.now()}`;
-      const project = new Project({ name, createdBy: session.user.id, publicLink });
+      const project = new Project({ name, createdBy: decoded.id, publicLink });
       await project.save();
       return res.status(201).json(project);
     }
+
     return res.status(405).json({ message: 'Method not allowed' });
   } catch (error) {
     console.error('API /projects error:', error);

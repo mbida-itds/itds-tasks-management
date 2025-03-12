@@ -11,15 +11,16 @@ const SignIn = () => {
     e.preventDefault();
     setError('');
 
-    const res = await fetch('/api/auth/signin', {
+    const res = await fetch('/api/auth/auth', { // Updated endpoint
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password }), // No role needed for sign-in
     });
 
     if (res.ok) {
-      // Redirect to dashboard or other page on successful login
-      router.push('/dashboard');
+      const { token } = await res.json(); // Get the token from the response
+      localStorage.setItem('token', token); // Store the token in local storage
+      router.push('/dashboard'); // Redirect to dashboard
     } else {
       const errorData = await res.json();
       setError(errorData.message || 'Login failed');

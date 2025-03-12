@@ -1,5 +1,5 @@
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -7,52 +7,62 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Dashboard() {
-  const { data: session, status } = useSession();
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ title: '', description: '', group: '', projectId: '', assignedTo: '' });
   const [error, setError] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      // Fetch projects
-      fetch('/api/projects')
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error(`HTTP error! Status: ${res.status}`);
-          }
-          return res.json();
-        })
-        .then((data) => setProjects(data))
-        .catch((err) => {
-          console.error('Fetch projects error:', err);
-          setError('Failed to load projects');
-        });
-
-      // Fetch tasks
-      fetch('/api/tasks')
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error(`HTTP error! Status: ${res.status}`);
-          }
-          return res.json();
-        })
-        .then((data) => setTasks(data))
-        .catch((err) => {
-          console.error('Fetch tasks error:', err);
-          setError((prev) => prev || 'Failed to load tasks');
-        });
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/signin'); // Redirect to sign-in if no token
+      return;
     }
-  }, [status]);
 
-  if (status === 'loading') return <div>Loading...</div>;
-  if (status === 'unauthenticated') return <div>Please sign in</div>;
+    // Fetch projects
+    fetch('/api/projects', {
+      headers: { Authorization: `Bearer ${token}` }, // Include JWT token
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => setProjects(data))
+      .catch((err) => {
+        console.error('Fetch projects error:', err);
+        setError('Failed to load projects');
+      });
+
+    // Fetch tasks
+    fetch('/api/tasks', {
+      headers: { Authorization: `Bearer ${token}` }, // Include JWT token
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => setTasks(data))
+      .catch((err) => {
+        console.error('Fetch tasks error:', err);
+        setError((prev) => prev || 'Failed to load tasks');
+      });
+  }, [router]);
 
   const handleCreateTask = async () => {
-    if (session?.user.role !== 'tester') return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
     const res = await fetch('/api/tasks', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`, // Include JWT token
+      },
       body: JSON.stringify(newTask),
     });
     if (res.ok) {
@@ -62,9 +72,13 @@ export default function Dashboard() {
   };
 
   const handleUpdateStatus = async (taskId: string, status: string) => {
+    const token = localStorage.getItem('token');
     const res = await fetch(`/api/tasks/${taskId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`, // Include JWT token
+      },
       body: JSON.stringify({ status }),
     });
     if (res.ok) {
@@ -88,51 +102,49 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
-      {session?.user.role === 'tester' && (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>Create Task</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create a New Task</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input
-                placeholder="Title"
-                value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-              />
-              <Input
-                placeholder="Description"
-                value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-              />
-              <Input
-                placeholder="Group"
-                value={newTask.group}
-                onChange={(e) => setNewTask({ ...newTask, group: e.target.value })}
-              />
-              <Select onValueChange={(value) => setNewTask({ ...newTask, projectId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project._id} value={project._id}>{project.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Assigned To (User ID)"
-                value={newTask.assignedTo}
-                onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
-              />
-              <Button onClick={handleCreateTask}>Create</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button>Create Task</Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create a New Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder="Title"
+              value={newTask.title}
+              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+            />
+            <Input
+              placeholder="Description"
+              value={newTask.description}
+              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+            />
+            <Input
+              placeholder="Group"
+              value={newTask.group}
+              onChange={(e) => setNewTask({ ...newTask, group: e.target.value })}
+            />
+            <Select onValueChange={(value) => setNewTask({ ...newTask, projectId: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project) => (
+                  <SelectItem key={project._id} value={project._id}>{project.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Assigned To (User ID)"
+              value={newTask.assignedTo}
+              onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
+            />
+            <Button onClick={handleCreateTask}>Create</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="mt-8">
         <h2 className="text-2xl font-semibold mb-4 text-foreground">Tasks</h2>
         <div className="space-y-4">
@@ -145,22 +157,18 @@ export default function Dashboard() {
                 <p>Status: {task.status}</p>
                 <p>Group: {task.group || 'General'}</p>
                 <p>Assigned To: {task.assignedTo?.email || 'Unassigned'}</p>
-                {session?.user.role === 'developer' && task.status !== 'completed' && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleUpdateStatus(task._id, 'done_pending')}
-                  >
-                    Mark as Done
-                  </Button>
-                )}
-                {session?.user.role === 'tester' && task.status === 'done_pending' && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleUpdateStatus(task._id, 'completed')}
-                  >
-                    Validate
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={() => handleUpdateStatus(task._id, 'done_pending')}
+                >
+                  Mark as Done
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleUpdateStatus(task._id, 'completed')}
+                >
+                  Validate
+                </Button>
               </CardContent>
             </Card>
           ))}
