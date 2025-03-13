@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import Link from 'next/link'; // Import Link from next/link
 
-const SignIn = () => {
+export default function Signin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -10,54 +13,53 @@ const SignIn = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    try {
+      const res = await fetch('/api/auth/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const res = await fetch('/api/auth/auth', { // Updated endpoint
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }), // No role needed for sign-in
-    });
-
-    if (res.ok) {
-      const { token } = await res.json(); // Get the token from the response
-      localStorage.setItem('token', token); // Store the token in local storage
-      router.push('/dashboard'); // Redirect to dashboard
-    } else {
-      const errorData = await res.json();
-      setError(errorData.message || 'Login failed');
+      if (res.ok) {
+        const { token } = await res.json();
+        localStorage.setItem('token', token);
+        router.push('/dashboard');
+      } else {
+        const errorData = await res.json();
+        setError(errorData.message || 'Sign in failed');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Sign-in error:', err);
     }
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Sign In</h1>
-      {error && <div className="text-red-500 mb-4">{error}</div>}
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="border rounded w-full py-2 px-3"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="border rounded w-full py-2 px-3"
-          />
-        </div>
-        <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded">
-          Sign In
-        </button>
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <form onSubmit={handleSubmit} className="p-6 bg-card rounded-lg shadow-md space-y-4">
+        <h2 className="text-2xl font-bold text-center text-foreground">Sign In</h2>
+        {error && <p className="text-red-500 text-center">{error}</p>}
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          className="w-full"
+        />
+        <Input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          className="w-full"
+        />
+        <Button type="submit" className="w-full">
+          Submit
+        </Button>
+        <p className="text-center">
+  Don't have an account? <Link href="/signup" className="text-blue-500">Sign Up</Link>
+</p>
       </form>
     </div>
   );
-};
-
-export default SignIn;
+}

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Link from 'next/link'; // Import Link from next/link
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -13,18 +14,18 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // Reset error state
+    setError('');
     try {
-      const res = await fetch('/api/auth/auth', { // Updated endpoint
+      const res = await fetch('/api/auth/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role }), // Include role for sign-up
+        body: JSON.stringify({ email, password, role }),
       });
 
       if (res.ok) {
-        const { token } = await res.json(); // Get the token from the response
-        localStorage.setItem('token', token); // Store the token in local storage
-        router.push('/dashboard'); // Redirect to dashboard
+        const { token } = await res.json();
+        localStorage.setItem('token', token);
+        router.push('/dashboard');
       } else {
         const errorData = await res.json();
         setError(errorData.message || 'Sign up failed');
@@ -38,34 +39,38 @@ export default function Signup() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <form onSubmit={handleSubmit} className="p-6 bg-card rounded-lg shadow-md space-y-4">
-        <h2 className="text-2xl font-bold text-center text-foreground">Sign Up</h2>
+        <h2 className="text-2xl font-bold text-center text-gray-800">Sign Up</h2>
         {error && <p className="text-red-500 text-center">{error}</p>}
         <Input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="w-full"
+          className="w-full text-gray-800"
         />
         <Input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          className="w-full"
+          className="w-full text-gray-800"
         />
         <Select value={role} onValueChange={setRole}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full text-gray-800">
             <SelectValue placeholder="Select a role" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="developer">Developer</SelectItem>
-            <SelectItem value="tester">Tester</SelectItem>
+            <SelectItem value="developer" className='text-gray-800'>Developer</SelectItem>
+            <SelectItem value="tester" className='text-gray-800'>Tester</SelectItem>
+            <SelectItem value="viewer" className='text-gray-800'>Viewer</SelectItem>
           </SelectContent>
         </Select>
         <Button type="submit" className="w-full">
           Submit
         </Button>
+        <p className="text-center text-gray-800">
+          Already have an account? <Link href="/signin" className="text-gray-800 font-bold">Sign In</Link>
+        </p>
       </form>
     </div>
   );

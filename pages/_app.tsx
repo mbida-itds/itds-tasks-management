@@ -7,8 +7,10 @@ function MyApp({ Component, pageProps }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token && router.pathname !== '/signin') {
-      router.push('/signin'); // Redirect to sign-in if no token
+    const publicPaths = ['/signin', '/signup']; // Define public paths
+
+    if (!token && !publicPaths.includes(router.pathname)) {
+      router.push('/signin'); // Redirect to sign-in if no token and not on public paths
     }
   }, [router]);
 

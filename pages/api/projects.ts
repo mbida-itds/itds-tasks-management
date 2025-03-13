@@ -1,45 +1,47 @@
-import connectDB from '@/lib/db';
 import Project from '@/models/Project';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'; // Use a secure secret in production
+const JWT_SECRET = process.env.JWT_SECRET || ''; // Use a secure secret in production
+
+// Function to generate a random key of 6 characters (letters and digits)
+const generateRandomKey = (length = 6) => {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    result += characters.charAt(randomIndex);
+  }
+  return result;
+};
 
 export default async function handler(req, res) {
   try {
     await connectDB();
     
-    // Extract token from Authorization header
     const token = req.headers.authorization?.split(' ')[1];
-
-    if (req.method === 'GET') {
-      if (!token) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-      
-      // Verify token
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const projects = await Project.find({ createdBy: decoded.id }); // Use the user ID from the token
-      return res.status(200).json(projects);
-    }
-
+    
     if (req.method === 'POST') {
       if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      // Verify token
-      const decoded = jwt.verify(token, JWT_SECRET);
-      if (decoded.role !== 'admin') {
-        return res.status(403).json({ message: 'Forbidden' });
+      let decoded;
+      try {
+        decoded = jwt.verify(token, JWT_SECRET);
+      } catch (error) {
+        if (error instanceof jwt.TokenExpiredError) {
+          return res.status(401).json({ message: 'Token has expired. Please log in again.' });
+        }
+        return res.status(401).json({ message: 'Unauthorized' });
       }
-      
+
       const { name } = req.body;
       if (!name) {
         return res.status(400).json({ message: 'Project name is required' });
       }
-      
-      const publicLink = `${name.toLowerCase().replace(/\s/g, '-')}-${Date.now()}`;
-      const project = new Project({ name, createdBy: decoded.id, publicLink });
+
+      const publickey = generateRandomKey(); // Generate a random key
+      const project = new Project({ name, createdBy: decoded.id, publickey });
       await project.save();
       return res.status(201).json(project);
     }
