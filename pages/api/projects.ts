@@ -1,4 +1,6 @@
+import connectDB  from '@/lib/db';
 import Project from '@/models/Project';
+import Task from '@/models/Task';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || ''; // Use a secure secret in production
@@ -44,6 +46,23 @@ export default async function handler(req, res) {
       const project = new Project({ name, createdBy: decoded.id, publickey });
       await project.save();
       return res.status(201).json(project);
+    } else if (req.method === 'GET') {
+      const { publickey } = req.query; // Get public key from query parameters
+    
+      if (!publickey) {
+        return res.status(400).json({ message: 'Public key is required' });
+      }
+    
+      const project = await Project.findOne({ publickey }).populate('groups').populate({
+        path: 'tasks',
+        model: Task,
+      });
+    
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+    
+      return res.status(200).json(project);
     }
 
     return res.status(405).json({ message: 'Method not allowed' });

@@ -14,7 +14,7 @@ export default function Signin() {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch('/api/auth/auth', {
+      const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -37,28 +37,28 @@ export default function Signin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <form onSubmit={handleSubmit} className="p-6 bg-card rounded-lg shadow-md space-y-4">
-        <h2 className="text-2xl font-bold text-center text-foreground">Sign In</h2>
+        <h2 className="text-2xl font-bold text-center text-gray-800">Sign In</h2>
         {error && <p className="text-red-500 text-center">{error}</p>}
         <Input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="w-full"
+          className="w-full text-gray-800 "
         />
         <Input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          className="w-full"
+          className="w-full text-gray-800 "
         />
         <Button type="submit" className="w-full">
           Submit
         </Button>
-        <p className="text-center">
-  Don't have an account? <Link href="/signup" className="text-blue-500">Sign Up</Link>
-</p>
+        <p className="text-center text-gray-800">
+          Don't have an account? <Link href="/signup" className="text-blue-500">Sign Up</Link>
+        </p>
       </form>
     </div>
   );

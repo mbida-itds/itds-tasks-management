@@ -5,6 +5,7 @@ const ProjectSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   publickey: { type: String, unique: true },
   createdAt: { type: Date, default: Date.now },
+  groups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }],
 });
 
 export default mongoose.models.Project || mongoose.model('Project', ProjectSchema);
